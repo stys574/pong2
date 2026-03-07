@@ -127,14 +127,14 @@ def draw_button(win,text,rect,hover=False):
     win.blit(text_surf,text_rect)
 
 def draw_balance(win,players):
-    start_y=200
-    pygame.draw.rect(win,GRAY,(WIDTH-220,start_y,210,30+len(players)*30))
-    pygame.draw.rect(win,BLACK,(WIDTH-220,start_y,210,30+len(players)*30),2)
+    start_y=HEIGHT-470
+    pygame.draw.rect(win,GRAY,(WIDTH-370,start_y,210,30+len(players)*30))
+    pygame.draw.rect(win,BLACK,(WIDTH-370,start_y,210,30+len(players)*30),2)
     title=BIG_FONT.render("Баланс гравців",True,BLACK)
-    win.blit(title,(WIDTH-210,start_y+5))
+    win.blit(title,(WIDTH-360,start_y+5))
     for idx,p in enumerate(players):
         text=FONT.render(f"{p.name}: {p.money}$",True,p.color)
-        win.blit(text,(WIDTH-210,start_y+40+idx*25))
+        win.blit(text,(WIDTH-360,start_y+40+idx*25))
 
 # =======================
 # Стартовий екран
@@ -203,7 +203,7 @@ def handle_tile(player):
             rent = tile["rent"]*(1+tile.get("level",0))
             player.money -= rent
             tile["owner"].money += rent
-            message = f"{player.name} платить оренду {rent}$ гравцю {tile['owner'].name}"
+            message = f"{player.name} платить оренду {rent}$ \n гравцю {tile['owner'].name}"
             stoppent = True
 
     elif tile["type"]=="tax":
@@ -224,7 +224,7 @@ def handle_tile(player):
         else:
             player.move_one()
             msg, buy, upgrade, mortgage, stop = handle_tile(player)
-            message=f"{player.name} пересунувся через шанс | {msg}"
+            message=f"{player.name} пересунувся через шанс |\n {msg}"
             buy_prompt = buy
             upgrade_prompt = upgrade
             mortgage_prompt = mortgage
@@ -239,7 +239,7 @@ def handle_tile(player):
             mortgage_prompt=True
         else:
             stoppent = True  # вибуває
-            message += " | Гравець вибуває!"
+            message += "\n| Гравець вибуває!"
     return message,buy_prompt,upgrade_prompt,mortgage_prompt,stoppent
 
 # =======================
@@ -313,7 +313,7 @@ def main():
                         if current_player in players:
                             players.remove(current_player)
                         if len(players)==1:
-                            last_message+=f" {players[0].name} виграв гру!"
+                            last_message+=f"\n{players[0].name} виграв гру!"
                             pygame.display.update()
                             pygame.time.wait(5000)
                             pygame.quit()
@@ -335,9 +335,9 @@ def main():
                 if stoppent and not (buy_prompt or upgrade_prompt or mortgage_prompt):
                     if current_player.money<0 and not current_player.properties:
                         players.remove(current_player)
-                        last_message += f" {current_player.name} вибув!"
+                        last_message += f" \n{current_player.name} вибув!"
                         if len(players)==1:
-                            last_message += f" {players[0].name} виграв гру!"
+                            last_message += f" \n{players[0].name} виграв гру!"
                             pygame.display.update()
                             pygame.time.wait(5000)
                             pygame.quit()
@@ -356,9 +356,12 @@ def main():
         elif steps_left==0:
             draw_button(WIN,"Кинути кубик",button_rect,hover_button)
 
-        msg_surf = BIG_FONT.render(last_message,True,BLACK)
-        msg_rect = msg_surf.get_rect(center=(WIDTH//2,HEIGHT//4))
-        WIN.blit(msg_surf,msg_rect)
+        lines = last_message.split('\n')
+
+        for i, line in enumerate(lines):
+            msg_surf = BIG_FONT.render(line, True, BLACK)
+            msg_rect = msg_surf.get_rect(center=(WIDTH//2, HEIGHT//4 + i * BIG_FONT.get_height()))
+            WIN.blit(msg_surf, msg_rect)
 
         draw_balance(WIN,players)
         pygame.display.update()
