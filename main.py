@@ -11,16 +11,23 @@ CLOCK = pygame.time.Clock()
 START_MONEY = 1000
 PASS_START_BONUS = 200
 
-WHITE = (255,255,255)
-BLACK = (0,0,0)
-GRAY = (200,200,200)
-RED = (255,0,0)
-BLUE = (0,0,255)
-GREEN = (50,200,50)
-YELLOW = (255,255,100)
-ORANGE = (255,165,0)
-BUTTON_COLOR = (0,120,255)
-BUTTON_HOVER = (0,180,255)
+# =======================
+# Кольори
+# =======================
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+GRAY = (210, 210, 210)
+LIGHT_BLUE = (173, 216, 230)
+BLUE = (64, 164, 223)
+TURQUOISE = (64, 224, 208)
+RED = (255, 99, 71)
+ORANGE = (255, 165, 100)
+YELLOW = (255, 250, 205)
+BUTTON_COLOR = TURQUOISE
+BUTTON_HOVER = (100, 255, 240)
+BACKGROUND_COLOR = BLACK
+TILE_CITY = YELLOW
+TILE_OTHER = GRAY
 
 TILE_SIZE = 80
 OFFSET_X, OFFSET_Y = 150, 150
@@ -37,21 +44,22 @@ for i in range(9,-1,-1):
     BOARD_POSITIONS.append((OFFSET_X + i*TILE_SIZE, OFFSET_Y + 7*TILE_SIZE))
 for i in range(6,0,-1):
     BOARD_POSITIONS.append((OFFSET_X, OFFSET_Y + i*TILE_SIZE))
-
 assert len(BOARD_POSITIONS) == 32
 
 # =======================
 # Міста та типи
 # =======================
-cities = ["Київ","Львів","Одеса","Харків","Дніпро","Вінниця","Чернівці","Запоріжжя",
-          "Полтава","Житомир","Черкаси","Миколаїв","Херсон","Суми","Івано-Франківськ",
-          "Рівне","Луцьк","Тернопіль","Хмельницький","Кропивницький","Ужгород","Біла Церква",
-          "Кам'янець-Подільський","Чернігів"]
+cities = [
+    "Київ","Львів","Одеса","Харків","Дніпро","Вінниця","Чернівці","Запоріжжя",
+    "Полтава","Житомир","Черкаси","Миколаїв","Херсон","Суми","І-Франківськ",
+    "Рівне","Луцьк","Тернопіль","Хмельн.","Кропивн.","Ужгород","Біла Церква",
+    "К-Поділ.","Чернігів""Бердянськ","Мелітополь","Ніжин","Славутич","Павлоград","Бровари","калуш"
+]
 
 types = ["start","city","city","chance","city","tax","city","chance",
          "city","city","city","chance","city","tax","city","chance",
          "city","city","city","chance","city","tax","city","chance",
-         "city","city","city","tax","city","chance","city","jail"]
+         "city","city","city","tax","city","chance","city","jail","city","city","city"]
 
 prices = [0,500,450,0,400,100,350,0,
           300,250,200,0,150,100,120,0,
@@ -62,6 +70,7 @@ board = []
 for i in range(32):
     tile_type = types[i]
     if tile_type=="city":
+        # Якщо місто не в списку, генеруємо автоматично
         name = cities[i] if i < len(cities) else f"Місто {i+1}"
         board.append({"name":name,"type":"city","price":prices[i],
                       "rent":prices[i]//10,"owner":None,"level":0})
@@ -98,30 +107,40 @@ def roll_dice():
 # Малювання
 # =======================
 def draw_board(win, players):
-    win.fill(GREEN)
+    win.fill(BACKGROUND_COLOR)
     for i, tile in enumerate(board):
         x, y = BOARD_POSITIONS[i]
-        color = YELLOW if tile["type"]=="city" else GRAY
+        # Задаємо кольори
+        if tile["type"]=="city":
+            color = "GREEN"           # міста зелені
+            text_color = 'BLACK'
+        else:
+            color = 'RED'             # chance, tax, jail, start червоні
+            text_color = 'WHITE'
+        
         pygame.draw.rect(win,color,(x,y,TILE_SIZE,TILE_SIZE))
-        pygame.draw.rect(win,BLACK,(x,y,TILE_SIZE,TILE_SIZE),2)
-        text_name = tile["name"]
+        pygame.draw.rect(win,'WHITE',(x,y,TILE_SIZE,TILE_SIZE),2)
+        
+        text_name = tile["name"][:10]  # обрізаємо до 10 символів
         if tile["type"]=="city" and tile.get("level",0)>0:
             text_name += f"({tile['level']})"
-        text_surf = FONT.render(text_name,True,BLACK)
-        text_rect = text_surf.get_rect(center=(x+TILE_SIZE//2,y+TILE_SIZE//2))
+        
+        text_surf = FONT.render(text_name, True, text_color)
+        text_rect = text_surf.get_rect(center=(x+TILE_SIZE//2, y+TILE_SIZE//2))
         win.blit(text_surf,text_rect)
+
         if tile.get("owner"):
             pygame.draw.rect(win, tile["owner"].color,
-                             (x+5,y+5,TILE_SIZE-10,TILE_SIZE-10),3)
+                             (x+5, y+5, TILE_SIZE-10, TILE_SIZE-10),3)
     for idx, player in enumerate(players):
-        x,y = BOARD_POSITIONS[player.pos]
+        x, y = BOARD_POSITIONS[player.pos]
         offset = idx*15
         pygame.draw.circle(win,player.color,(x+TILE_SIZE//2+offset,y+TILE_SIZE//2),12)
 
 def draw_button(win,text,rect,hover=False):
     color = BUTTON_HOVER if hover else BUTTON_COLOR
     pygame.draw.rect(win,color,rect)
-    pygame.draw.rect(win,BLACK,rect,2)
+    pygame.draw.rect(win,WHITE,rect,2)
     text_surf = BIG_FONT.render(text,True,WHITE)
     text_rect = text_surf.get_rect(center=rect.center)
     win.blit(text_surf,text_rect)
@@ -129,7 +148,7 @@ def draw_button(win,text,rect,hover=False):
 def draw_balance(win,players):
     start_y=HEIGHT-470
     pygame.draw.rect(win,GRAY,(WIDTH-370,start_y,210,30+len(players)*30))
-    pygame.draw.rect(win,BLACK,(WIDTH-370,start_y,210,30+len(players)*30),2)
+    pygame.draw.rect(win,WHITE,(WIDTH-370,start_y,210,30+len(players)*30),2)
     title=BIG_FONT.render("Баланс гравців",True,BLACK)
     win.blit(title,(WIDTH-360,start_y+5))
     for idx,p in enumerate(players):
@@ -140,31 +159,36 @@ def draw_balance(win,players):
 # Стартовий екран
 # =======================
 def start_screen():
-    input_box = pygame.Rect(WIDTH//2-50,HEIGHT//2,100,50)
+    input_box = pygame.Rect(WIDTH//2-50, HEIGHT//2, 100, 50)
     active = False
     text = ''
     while True:
-        WIN.fill(GREEN)
+        WIN.fill(BACKGROUND_COLOR)
         msg = BIG_FONT.render("Введіть кількість гравців (2-4):", True, WHITE)
         WIN.blit(msg, (WIDTH//2 - msg.get_width()//2, HEIGHT//2 - 50))
-        txt_surface = BIG_FONT.render(text, True, BLACK)
-        WIN.blit(txt_surface, (input_box.x+10, input_box.y+10))
-        pygame.draw.rect(WIN,BLUE if active else GRAY,input_box,2)
+
+        pygame.draw.rect(WIN, (30,30,30), input_box)
+        pygame.draw.rect(WIN, BLUE if active else WHITE, input_box, 2)
+
+        txt_surface = BIG_FONT.render(text, True, WHITE)
+        WIN.blit(txt_surface, (input_box.x + 10, input_box.y + 10))
+
         for event in pygame.event.get():
-            if event.type==pygame.QUIT:
+            if event.type == pygame.QUIT:
                 pygame.quit(); sys.exit()
-            if event.type==pygame.MOUSEBUTTONDOWN:
+            if event.type == pygame.MOUSEBUTTONDOWN:
                 active = input_box.collidepoint(event.pos)
-            if event.type==pygame.KEYDOWN and active:
-                if event.key==pygame.K_RETURN:
-                    if text.isdigit() and 2<=int(text)<=4:
+            if event.type == pygame.KEYDOWN and active:
+                if event.key == pygame.K_RETURN:
+                    if text.isdigit() and 2 <= int(text) <= 4:
                         return int(text)
-                    text=''
-                elif event.key==pygame.K_BACKSPACE:
-                    text=text[:-1]
+                    text = ''
+                elif event.key == pygame.K_BACKSPACE:
+                    text = text[:-1]
                 else:
-                    if len(text)<2:
-                        text+=event.unicode
+                    if len(text) < 2:
+                        text += event.unicode
+
         pygame.display.update()
         CLOCK.tick(30)
 
@@ -238,7 +262,7 @@ def handle_tile(player):
         if player.properties:
             mortgage_prompt=True
         else:
-            stoppent = True  # вибуває
+            stoppent = True
             message += "\n| Гравець вибуває!"
     return message,buy_prompt,upgrade_prompt,mortgage_prompt,stoppent
 
@@ -247,7 +271,7 @@ def handle_tile(player):
 # =======================
 def main():
     num_players = start_screen()
-    colors = [RED, BLUE, ORANGE, BLACK]
+    colors = [TURQUOISE, BLUE, RED, ORANGE]
     players = [Player(f"Гравець {i+1}", colors[i]) for i in range(num_players)]
     turn = 0
     last_message = ""
@@ -331,7 +355,6 @@ def main():
             steps_left-=1
             if steps_left==0:
                 last_message,buy_prompt,upgrade_prompt,mortgage_prompt,stoppent=handle_tile(current_player)
-                # Якщо гравець має stoppent=True і не купує/прокачує/заставляє — хід переходить
                 if stoppent and not (buy_prompt or upgrade_prompt or mortgage_prompt):
                     if current_player.money<0 and not current_player.properties:
                         players.remove(current_player)
@@ -357,9 +380,8 @@ def main():
             draw_button(WIN,"Кинути кубик",button_rect,hover_button)
 
         lines = last_message.split('\n')
-
         for i, line in enumerate(lines):
-            msg_surf = BIG_FONT.render(line, True, BLACK)
+            msg_surf = BIG_FONT.render(line, True, WHITE)
             msg_rect = msg_surf.get_rect(center=(WIDTH//2, HEIGHT//4 + i * BIG_FONT.get_height()))
             WIN.blit(msg_surf, msg_rect)
 
